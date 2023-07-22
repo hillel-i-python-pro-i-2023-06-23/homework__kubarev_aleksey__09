@@ -1,7 +1,8 @@
-# Flask application
+# Homework №9
+SQL + Flask. Простой CRUD и Телефонная книга
 
 ---
-![Main workflow](https://github.com/hillel-i-python-pro-i-2023-06-23/shared__flask__example_2023_06_23/actions/workflows/main-workflow.yml/badge.svg)
+![Main workflow](https://github.com/hillel-i-python-pro-i-2023-06-23/homework__kubarev_aleksey__09/actions/workflows/main-workflow.yml/badge.svg)
 
 ## 🏠 Homework
 

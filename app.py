@@ -1,77 +1,99 @@
-from flask import Flask
+from flask import Flask, Response
 from webargs import fields
 from webargs.flaskparser import use_args
 
-from application.services.generate_message import generate_message
-from application.services.generate_users import generate_users
+from application.services.create_table import create_table
+from application.services.db_connection import DBConnection
+
 
 app = Flask(__name__)
 
 
 @app.route("/")
-def hello_world():
-    return "Hello World!"
+def welcome():
+    return "Homework #9 (Kubarev Aleksey)"
 
 
-@app.route("/hi/<name>/<int:age>")
-@app.route("/hi/<name>")
-@app.route("/hi")
-def hi(name: str = "Lucy", age: int = 42):
-    return generate_message(name=name, age=age)
+@app.route("/users/create")
+@use_args({"name": fields.Str(reuired=True), "number": fields.Str(required=True)}, location="query")
+def users__create(args):
+    with DBConnection() as connection:
+        with connection:
+            connection.execute(
+                "INSERT INTO users (contact_name, phone_value) VALUES (:name, :number);",
+                {"name": args["name"], "number": args["number"]},
+            )
+
+    return "Ok!"
 
 
-@app.route("/hello")
-@use_args({"name": fields.Str(missing="Bob"), "age": fields.Int(missing=20)}, location="query")
-def hello(args):
-    name = args["name"]
-    age = args["age"]
+@app.route("/users/read-all")
+def users__read_all():
+    with DBConnection() as connection:
+        with connection:
+            users = connection.execute("SELECT * FROM users;").fetchall()
 
-    return generate_message(name=name, age=age)
-
-
-@app.route("/users/generate")
-@use_args({"amount": fields.Int(missing=10)}, location="query")
-def users_generate(args):
-    # [handle_input]-[BEGIN]
-    amount = args["amount"]
-    # [handle_input]-[END]
-
-    # [handle_logic]-[BEGIN]
-    users = generate_users(amount=amount)
-    # [handle_logic]-[END]
-
-    # [handle_output]-[BEGIN]
-    users_formatted = []
-    for user in users:
-        user_formatted = f"<li><b>{user.username}</b> - <span>{user.email}</span> - <span>{user.age}</span></li>"
-        users_formatted.append(user_formatted)
-    _temp = "\n".join(users_formatted)
-    return f"<ol>{_temp}</ol>"
-    # [handle_output]-[END]
+    return "<br>".join([f'{user["phone_id"]}: {user["contact_name"]} - {user["phone_value"]}' for user in users])
 
 
-# HTML tags
+@app.route("/users/read/<int:phone_id>")
+def user__read(phone_id: int):
+    with DBConnection() as connection:
+        user = connection.execute(
+            "SELECT * FROM users WHERE (phone_id = :phone_id);",
+            {
+                "phone_id": phone_id,
+            },
+        ).fetchone()
 
-# div
-# p
-# span
-
-# ul
-# ol
-# li
-
-# hr
-
-# br
-
-# a
-
-# form
-# input
-# button
-
-# h1, h2, h3, h4, h5, h6
+    return f'{user["phone_id"]}: {user["contact_name"]} - {user["phone_value"]}'
 
 
-if __name__ == "__main__":
-    app.run()
+@app.route("/users/update/<int:phone_id>")
+@use_args({"name": fields.Str(), "number": fields.Str()}, location="query")
+def users__update(
+    args,
+    phone_id: int,
+):
+    with DBConnection() as connection:
+        with connection:
+            name = args.get("name")
+            number = args.get("number")
+            if name is None and number is None:
+                return Response(
+                    "Please provide at least one argument",
+                    status=400,
+                )
+            args_for_request = []
+            if name is not None:
+                args_for_request.append("contact_name=:contact_name")
+            if number is not None:
+                args_for_request.append("phone_value=:phone_value")
+            args_2 = ", ".join(args_for_request)
+            connection.execute(
+                "UPDATE users " f"SET {args_2}" " WHERE (phone_id = :phone_id);",
+                {
+                    "phone_id": phone_id,
+                    "contact_name": name,
+                    "phone_value": number,
+                },
+            )
+
+    return "Ok!"
+
+
+@app.route("/users/delete/<int:phone_id>")
+def user__delete(phone_id: int):
+    with DBConnection() as connection:
+        with connection:
+            connection.execute(
+                "DELETE " "FROM users " "WHERE (phone_id = :phone_id);",
+                {
+                    "phone_id": phone_id,
+                },
+            )
+
+    return "Ok!"
+
+
+create_table()
