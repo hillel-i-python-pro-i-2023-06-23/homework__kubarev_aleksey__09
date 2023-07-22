@@ -4,9 +4,6 @@ flask==2.3.2
 # For better query hadnling.
 webargs==8.3.0
 
-# For name generation.
-faker==19.2.0
-
 # [code_style]-[BEGIN]
 # Pre-commit hook.
 pre-commit==3.3.3
